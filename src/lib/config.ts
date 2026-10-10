@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 
 const PROD_API = "http://haykocepkin51265.rf.gd";
@@ -93,8 +94,65 @@ export function firstAdminTg(): number | null {
   return ids.length ? ids[0] : null;
 }
 
+// All panel-owned sqlite + cache files live under one writable root. Deployed
+// hosts often make the app dir itself read-only, so the default walks a
+// candidate chain and the failure names the knob instead of a bare EPERM.
+// An explicit PANEL_DATA_DIR is honored strictly — no silent fallback.
+function writableRoot(candidates: string[]): string {
+  const probe = `.write-probe-${process.pid}`;
+  for (const dir of candidates) {
+    if (!dir) continue;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      // mkdir succeeds on an existing read-only dir; a real write is the test.
+      const file = path.join(dir, probe);
+      fs.writeFileSync(file, "ok");
+      fs.rmSync(file, { force: true });
+      return dir;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(
+    `data dir not writable (tried: ${candidates.filter(Boolean).join("; ")}); set PANEL_DATA_DIR to a writable path`,
+  );
+}
+
+let cachedRoot: string | null = null;
+
+export function dataRoot() {
+  const custom = env("PANEL_DATA_DIR");
+  if (custom) return custom;
+  if (cachedRoot) return cachedRoot;
+  const home = env("USERPROFILE") || env("HOME");
+  const localAppData = env("LOCALAPPDATA");
+  cachedRoot = writableRoot([
+    path.join(process.cwd(), "data"),
+    localAppData ? path.join(localAppData, "wsvc-panel") : "",
+    home ? path.join(home, ".wsvc-panel") : "",
+  ].filter(Boolean));
+  console.log(`[config] data root: ${cachedRoot}`);
+  return cachedRoot;
+}
+
+export function ensureDataDir() {
+  const dir = dataRoot();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "unknown";
+    throw new Error(`data dir not writable: ${dir} (${code}); set PANEL_DATA_DIR to a writable path`);
+  }
+}
+
 export function dbPath() {
   const custom = env("BOT_DB_PATH");
   if (custom) return custom;
-  return path.join(process.cwd(), "..", "bot", "data", "bot.db");
+  // Legacy layout: <root>/bot/data/bot.db next to the repo. Keep using it when
+  // it already exists so an existing panel keeps its data; otherwise land the
+  // db inside the writable root instead of reaching outside the app dir.
+  const legacy = path.join(process.cwd(), "..", "bot", "data", "bot.db");
+  if (fs.existsSync(legacy)) return legacy;
+  return path.join(ensureDataDir(), "bot.db");
 }

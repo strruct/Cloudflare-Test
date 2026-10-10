@@ -2,20 +2,27 @@ import { DatabaseSync } from "node:sqlite";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import fs from "fs";
 import path from "path";
+import { dataRoot, ensureDataDir } from "./config";
 
 let db: DatabaseSync | null = null;
 
 function dbFile() {
   const custom = (process.env.PANEL_USERS_DB ?? "").trim();
   if (custom) return custom;
-  return path.join(process.cwd(), "data", "users.db");
+  return path.join(dataRoot(), "users.db");
 }
 
 function open(): DatabaseSync {
   if (db) return db;
   const file = dbFile();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  db = new DatabaseSync(file);
+  try {
+    ensureDataDir();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    db = new DatabaseSync(file);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "unknown";
+    throw new Error(`users db not writable: ${file} (${code}); set PANEL_DATA_DIR to a writable path`);
+  }
   db.exec("PRAGMA journal_mode = WAL");
   db.exec(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

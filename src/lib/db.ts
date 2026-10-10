@@ -139,8 +139,13 @@ function schemaExec(d: DatabaseSync) {
 function open(): DatabaseSync {
   if (db) return db;
   const file = dbPath();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  db = new DatabaseSync(file);
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    db = new DatabaseSync(file);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "unknown";
+    throw new Error(`bot db not writable: ${file} (${code}); set PANEL_DATA_DIR or BOT_DB_PATH to a writable path`);
+  }
   schemaExec(db);
   return db;
 }
