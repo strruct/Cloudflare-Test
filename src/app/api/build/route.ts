@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth";
 import {
   activeBuild,
   addBuild,
+  ensureKey,
   getUser,
   lastBuildAt,
   listBuilds,
@@ -104,6 +105,7 @@ async function handleBuild(req: Request, tgId: number) {
 
   label = cleanLabel(label, kind);
 
+  await ensureKey(tgId);
   const active = await userActive(tgId);
   if (!active.ok) return NextResponse.json({ error: active.why }, { status: 403 });
 

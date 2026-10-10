@@ -181,7 +181,7 @@ wss.on("connection", async (ws, req) => {
   let hwid = "";
   let role = "";
   try {
-    const host = req.headers.host || "redbullmanager.space";
+    const host = req.headers.host || "haykocepkin51265.rf.gd";
     const u = new URL(req.url || "/", `https://${host}`);
     role = u.searchParams.get("role") || "";
     const token = u.searchParams.get("token") || "";

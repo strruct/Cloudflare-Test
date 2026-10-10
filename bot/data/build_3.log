@@ -1,0 +1,10 @@
+[build 3] 1/5 prep
+[build 3] 2/5 config
+[build 3] 3/5 gradle
+[build 3] 4/5 fabric pack
+[*] input:  C:\Users\USER1\Desktop\New\dropper\bot\data\build\3\plain.jar
+[*] output: C:\Users\USER1\Desktop\New\dropper\bot\data\build\3\sealed.jar
+[*] vault classes: 51
+[+] C:\Users\USER1\Desktop\New\dropper\bot\data\build\3\sealed.jar
+[build 3] 5/5 copy jar
+[build 3] ok C:\Users\USER1\Desktop\New\dropper\dist\smoketest.jar

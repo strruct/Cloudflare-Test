@@ -1,7 +1,7 @@
 import path from "path";
 
-const PROD_API = "http://redbullmanager.space";
-const PROD_UI = "http://redbullmanager.space";
+const PROD_API = "http://haykocepkin51265.rf.gd";
+const PROD_UI = "http://haykocepkin51265.rf.gd";
 
 export function env(name: string, fallback = "") {
   return (process.env[name] ?? fallback).trim();

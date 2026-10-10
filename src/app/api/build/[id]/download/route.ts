@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getBuild, projectRoot } from "@/lib/db";
+import { distRoots, getBuild } from "@/lib/db";
 
 export async function GET(
   _req: Request,
@@ -21,17 +21,16 @@ export async function GET(
     if ((build.kind !== "jar" && build.kind !== "exe") || build.status !== "ok") {
       return NextResponse.json({ error: "not downloadable" }, { status: 400 });
     }
+    if (!build.artifact) {
+      return NextResponse.json({ error: "file missing" }, { status: 404 });
+    }
 
-    const root = path.resolve(projectRoot(), "dist");
-    const fallback =
-      build.kind === "exe"
-        ? path.join(root, "WebCacheHost.exe")
-        : path.join(root, "zombiesurvival-1.4.2.jar");
-    const candidate = build.artifact ? path.resolve(build.artifact) : fallback;
-    const ok =
-      candidate === root ||
-      candidate.startsWith(root + path.sep) ||
-      candidate.startsWith(root + "/");
+    const candidate = path.resolve(build.artifact);
+    const norm = candidate.replace(/\\/g, "/");
+    const ok = distRoots().some((r) => {
+      const prefix = r.replace(/\\/g, "/").replace(/\/+$/, "");
+      return norm === prefix || norm.startsWith(prefix + "/");
+    });
     if (!ok) {
       return NextResponse.json({ error: "not downloadable" }, { status: 400 });
     }

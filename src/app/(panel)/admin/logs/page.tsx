@@ -130,7 +130,7 @@ export default function AdminLogsPage() {
                 no audit yet — Log.out lands here when exe/jar runs.
                 <br />
                 <span className="text-xs opacity-70">
-                  PANEL_BASE_URL and HUB_URL must be production domains (redbullmanager.space).
+                  PANEL_BASE_URL and HUB_URL must be production domains (haykocepkin51265.rf.gd).
                 </span>
               </p>
             ) : null}

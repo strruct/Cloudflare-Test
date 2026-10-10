@@ -1,0 +1,25 @@
+[build 4] 1/5 prep
+[build 4] 2/5 icon / name
+[+] mutate mode=neutral-portable seed=c30d14a4d759353b ver=1.5.22
+[build 4] 3/5 config
+[build 4] 4/5 exe pack
+  • electron-builder  version=24.13.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=28.3.3 appOutDir=dist\win-unpacked
+  • downloading     url=https://github.com/electron/electron/releases/download/v28.3.3/electron-v28.3.3-win32-x64.zip size=108 MB parts=8
+  • downloaded      url=https://github.com/electron/electron/releases/download/v28.3.3/electron-v28.3.3-win32-x64.zip duration=5.285s
+  • building        target=portable file=dist\WebCache Host.exe archs=x64
+  • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z size=1.3 MB parts=1
+  • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z duration=888ms
+^C[build 4] fail npx exit 3221225786
+Error: npx exit 3221225786
+    at run (file:///C:/Users/USER1/Desktop/New/dropper/tools/panel_build.mjs:142:11)
+    at buildExe (file:///C:/Users/USER1/Desktop/New/dropper/tools/panel_build.mjs:355:3)
+    at main (file:///C:/Users/USER1/Desktop/New/dropper/tools/panel_build.mjs:395:39)
+    at file:///C:/Users/USER1/Desktop/New/dropper/tools/panel_build.mjs:408:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+(node:16008) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)

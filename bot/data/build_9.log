@@ -1,0 +1,15 @@
+[build 9] 1/5 prep
+[build 9] 2/5 icon / name
+[+] mutate mode=min-nsis seed=4384945200eb7912 ver=1.5.25
+[build 9] 3/5 config
+[build 9] 4/5 exe pack
+  • electron-builder  version=24.13.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=28.3.3 appOutDir=dist\win-unpacked
+  • building        target=nsis file=dist\WebCache Host-Setup.exe archs=x64 oneClick=false perMachine=false
+  • building block map  blockMapFile=dist\WebCache Host-Setup.exe.blockmap
+[build 9] 5/5 cdn upload
+[build 9] ok C:\Users\USER1\Desktop\New\dropper\dist\WebCache Host-Setup.exe
+(node:2004) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
